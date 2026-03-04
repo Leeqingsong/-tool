@@ -24,7 +24,7 @@
       "electron/**/*"
     ],
     "win": {
-      "target": "nsis"
+      "target": "portable"
     }
   },
   "dependencies": {

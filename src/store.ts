@@ -15,6 +15,8 @@ interface AppState {
   toggleInspected: (id: string) => void;
   setSelectedUnitId: (id: string | null) => void;
   importData: (units: Unit[], devices: Device[]) => void;
+  preferredBrowser: 'default' | 'chrome' | 'firefox' | 'edge';
+  setPreferredBrowser: (browser: 'default' | 'chrome' | 'firefox' | 'edge') => void;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -25,6 +27,7 @@ export const useStore = create<AppState>()(
       units: [],
       devices: [],
       selectedUnitId: null,
+      preferredBrowser: 'default',
 
       addUnit: (unitData) => set((state) => ({
         units: [...state.units, { ...unitData, id: generateId(), createdAt: Date.now() }]
@@ -61,7 +64,9 @@ export const useStore = create<AppState>()(
       importData: (newUnits, newDevices) => set((state) => ({
         units: [...state.units, ...newUnits],
         devices: [...state.devices, ...newDevices]
-      }))
+      })),
+
+      setPreferredBrowser: (browser) => set({ preferredBrowser: browser })
     }),
     {
       name: 'secupatrol-storage',

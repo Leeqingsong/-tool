@@ -17,3 +17,11 @@ export interface Device {
   isInspected?: boolean;
   createdAt: number;
 }
+
+declare global {
+  interface Window {
+    electronAPI?: {
+      openDevice: (data: any) => Promise<{success: boolean, message: string}>;
+    };
+  }
+}

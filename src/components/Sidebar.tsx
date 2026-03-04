@@ -4,15 +4,18 @@ import { Plus, Building2, Trash2, Edit2, Settings } from 'lucide-react';
 import { cn } from '../utils';
 
 export function Sidebar({ onAddUnit }: { onAddUnit: () => void }) {
-  const { units, selectedUnitId, setSelectedUnitId, deleteUnit } = useStore();
+  const { units, selectedUnitId, setSelectedUnitId, deleteUnit, preferredBrowser, setPreferredBrowser } = useStore();
 
   return (
     <div className="w-64 bg-slate-900 text-slate-300 flex flex-col h-full border-r border-slate-800">
-      <div className="p-4 border-b border-slate-800 flex items-center gap-3">
-        <div className="bg-indigo-500 p-2 rounded-lg">
-          <Settings className="w-5 h-5 text-white" />
+      <div className="p-4 border-b border-slate-800 flex flex-col gap-1">
+        <div className="flex items-center gap-3">
+          <div className="bg-indigo-500 p-2 rounded-lg">
+            <Settings className="w-5 h-5 text-white" />
+          </div>
+          <h1 className="font-semibold text-white tracking-wide">SecuPatrol</h1>
         </div>
-        <h1 className="font-semibold text-white tracking-wide">SecuPatrol</h1>
+        <span className="text-xs text-slate-400 ml-11">tool by清松</span>
       </div>
       
       <div className="p-4">
@@ -65,6 +68,20 @@ export function Sidebar({ onAddUnit }: { onAddUnit: () => void }) {
             ))
           )}
         </div>
+      </div>
+      
+      <div className="mt-auto p-4 border-t border-slate-800">
+        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 block">默认浏览器</label>
+        <select 
+          value={preferredBrowser}
+          onChange={(e) => setPreferredBrowser(e.target.value as any)}
+          className="w-full bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-sm text-slate-300 focus:outline-none focus:border-indigo-500 transition-colors"
+        >
+          <option value="default">系统默认</option>
+          <option value="chrome">Google Chrome</option>
+          <option value="edge">Microsoft Edge</option>
+          <option value="firefox">Mozilla Firefox</option>
+        </select>
       </div>
     </div>
   );

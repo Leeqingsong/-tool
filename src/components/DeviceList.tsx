@@ -3,6 +3,7 @@ import { useStore } from '../store';
 import { Plus, Search, ExternalLink, Copy, Check, Trash2, Edit, ShieldAlert, Monitor, Server, Lock, Download, Upload, CheckCircle2 } from 'lucide-react';
 import { cn } from '../utils';
 import { Device } from '../types';
+import { Modal } from './Modal';
 
 const DEVICE_ICONS: Record<string, React.ElementType> = {
   Firewall: ShieldAlert,
@@ -18,6 +19,11 @@ export function DeviceList({ onAddDevice, onEditDevice }: { onAddDevice: () => v
   const { devices, selectedUnitId, units, deleteDevice, toggleInspected } = useStore();
   const [search, setSearch] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [deviceToLogin, setDeviceToLogin] = useState<Device | null>(null);
+  const [browserChoice, setBrowserChoice] = useState('chrome');
+  const [loginMode, setLoginMode] = useState('auto');
 
   const selectedUnit = units.find(u => u.id === selectedUnitId);
   const unitDevices = devices.filter(d => d.unitId === selectedUnitId);
@@ -34,12 +40,37 @@ export function DeviceList({ onAddDevice, onEditDevice }: { onAddDevice: () => v
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleOpen = (url: string) => {
-    let finalUrl = url;
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      finalUrl = 'https://' + url;
+  const handleOpenClick = (device: Device) => {
+    setDeviceToLogin(device);
+    setLoginModalOpen(true);
+  };
+
+  const confirmLogin = async () => {
+    if (!deviceToLogin) return;
+    
+    if (window.electronAPI) {
+      const result = await window.electronAPI.openDevice({
+        url: deviceToLogin.url,
+        browser: browserChoice,
+        mode: loginMode,
+        username: deviceToLogin.username,
+        password: deviceToLogin.password
+      });
+      if (result.message && result.message.includes('剪贴板')) {
+        alert(result.message);
+      }
+    } else {
+      let finalUrl = deviceToLogin.url;
+      if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+        finalUrl = 'https://' + finalUrl;
+      }
+      window.open(finalUrl, '_blank', 'noopener,noreferrer');
+      if (loginMode === 'auto') {
+        navigator.clipboard.writeText(deviceToLogin.password || '');
+        alert('网页版不支持自动填充，密码已复制到剪贴板');
+      }
     }
-    window.open(finalUrl, '_blank', 'noopener,noreferrer');
+    setLoginModalOpen(false);
   };
 
   if (!selectedUnitId) {
@@ -217,7 +248,7 @@ export function DeviceList({ onAddDevice, onEditDevice }: { onAddDevice: () => v
                         {device.notes || "暂无备注"}
                       </div>
                       <button 
-                        onClick={() => handleOpen(device.url)}
+                        onClick={() => handleOpenClick(device)}
                         className="flex items-center gap-2 text-sm font-medium text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg transition-colors"
                       >
                         打开登录页
@@ -231,6 +262,87 @@ export function DeviceList({ onAddDevice, onEditDevice }: { onAddDevice: () => v
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        title="打开登录页"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">选择浏览器</label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { id: 'chrome', name: 'Google Chrome' },
+                { id: 'edge', name: 'Microsoft Edge' },
+                { id: 'firefox', name: 'Firefox' },
+                { id: 'builtin', name: '内置安全浏览器' }
+              ].map(b => (
+                <button
+                  key={b.id}
+                  onClick={() => setBrowserChoice(b.id)}
+                  className={cn(
+                    "px-3 py-2 rounded-lg text-sm font-medium border transition-colors text-left",
+                    browserChoice === b.id 
+                      ? "bg-indigo-600/20 border-indigo-500 text-indigo-300" 
+                      : "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700"
+                  )}
+                >
+                  {b.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">登录方式</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setLoginMode('manual')}
+                className={cn(
+                  "px-3 py-2 rounded-lg text-sm font-medium border transition-colors text-center",
+                  loginMode === 'manual' 
+                    ? "bg-indigo-600/20 border-indigo-500 text-indigo-300" 
+                    : "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700"
+                )}
+              >
+                手动输入
+              </button>
+              <button
+                onClick={() => setLoginMode('auto')}
+                className={cn(
+                  "px-3 py-2 rounded-lg text-sm font-medium border transition-colors text-center",
+                  loginMode === 'auto' 
+                    ? "bg-indigo-600/20 border-indigo-500 text-indigo-300" 
+                    : "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700"
+                )}
+              >
+                自动填充
+              </button>
+            </div>
+            {loginMode === 'auto' && browserChoice !== 'builtin' && (
+              <p className="text-xs text-amber-400/80 mt-2">
+                注：外部浏览器不支持直接注入，将自动复制密码到剪贴板。如需全自动填充，请选择"内置安全浏览器"。
+              </p>
+            )}
+          </div>
+
+          <div className="pt-4 flex justify-end gap-3">
+            <button 
+              onClick={() => setLoginModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
+            >
+              取消
+            </button>
+            <button 
+              onClick={confirmLogin}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              确认打开
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
