@@ -1,0 +1,5 @@
+{
+  "name": "SecuPatrol - Security Device Manager",
+  "description": "A tool to manage and organize network security devices by unit, storing URLs and credentials for quick access during inspections.",
+  "requestFramePermissions": []
+}
